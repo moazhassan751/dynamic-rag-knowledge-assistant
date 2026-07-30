@@ -42,6 +42,10 @@ from __future__ import annotations
 
 import re
 
+from src.logger import setup_logger
+
+logger = setup_logger(__name__)
+
 
 # ── Sentence-boundary regex ──────────────────────────────────────────────────
 # Matches a sentence-ending punctuation mark followed by whitespace.
@@ -145,6 +149,7 @@ def chunk_document(
             })
             chunk_index += 1
 
+    logger.info(f"Created {len(all_chunks)} chunks from {len(pages)} pages of '{source}'")
     return all_chunks
 
 

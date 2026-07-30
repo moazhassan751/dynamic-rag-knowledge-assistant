@@ -64,6 +64,9 @@ class Settings:
     # ── Evaluation ───────────────────────────────────────────────────────
     eval_db_path: str = "eval_logs.db"
 
+    # ── Logging ──────────────────────────────────────────────────────────
+    log_level: str = "INFO"
+
     # ── Derived Properties ───────────────────────────────────────────────
 
     @property
@@ -134,4 +137,5 @@ def load_settings() -> Settings:
         pinecone_cloud=os.getenv("PINECONE_CLOUD", "aws"),
         pinecone_region=os.getenv("PINECONE_REGION", "us-east-1"),
         eval_db_path=os.getenv("EVAL_DB_PATH", "eval_logs.db"),
+        log_level=os.getenv("LOG_LEVEL", "INFO").upper(),
     )

@@ -29,6 +29,9 @@ from __future__ import annotations
 from typing import Any, Protocol, runtime_checkable
 
 from config import Settings
+from src.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 # ── Prompt Template ──────────────────────────────────────────────────────────
@@ -131,15 +134,21 @@ class GroqGenerator:
         """
         user_message = _build_user_message(query, context_chunks)
 
-        response = self._client.chat.completions.create(
-            model=self._model,
-            messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user", "content": user_message},
-            ],
-            temperature=0.1,  # Low temperature for factual, grounded answers
-            max_tokens=1024,
-        )
+        logger.info(f"Generating answer with Groq model '{self._model}'")
+        try:
+            response = self._client.chat.completions.create(
+                model=self._model,
+                messages=[
+                    {"role": "system", "content": _SYSTEM_PROMPT},
+                    {"role": "user", "content": user_message},
+                ],
+                temperature=0.1,  # Low temperature for factual, grounded answers
+                max_tokens=1024,
+            )
+            logger.debug("Groq generation complete.")
+        except Exception as exc:
+            logger.error(f"Groq API call failed: {exc}", exc_info=True)
+            raise
 
         choice = response.choices[0]
         usage = response.usage
@@ -191,15 +200,21 @@ class OpenAIGenerator:
         """
         user_message = _build_user_message(query, context_chunks)
 
-        response = self._client.chat.completions.create(
-            model=self._model,
-            messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
-                {"role": "user", "content": user_message},
-            ],
-            temperature=0.1,
-            max_tokens=1024,
-        )
+        logger.info(f"Generating answer with OpenAI model '{self._model}'")
+        try:
+            response = self._client.chat.completions.create(
+                model=self._model,
+                messages=[
+                    {"role": "system", "content": _SYSTEM_PROMPT},
+                    {"role": "user", "content": user_message},
+                ],
+                temperature=0.1,
+                max_tokens=1024,
+            )
+            logger.debug("OpenAI generation complete.")
+        except Exception as exc:
+            logger.error(f"OpenAI API call failed: {exc}", exc_info=True)
+            raise
 
         choice = response.choices[0]
         usage = response.usage

@@ -36,6 +36,9 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 
 from config import Settings
+from src.logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 # ── Provider Protocol ────────────────────────────────────────────────────────
@@ -69,8 +72,10 @@ class HuggingFaceEmbedder:
     """
 
     def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2") -> None:
+        logger.info(f"Loading local HuggingFace model: {model_name}")
         self._model = SentenceTransformer(model_name)
         self._dimension: int = self._model.get_sentence_embedding_dimension()
+        logger.info(f"HuggingFace model loaded. Dimension: {self._dimension}")
 
     # ── Public interface ─────────────────────────────────────────────────
 
@@ -93,12 +98,14 @@ class HuggingFaceEmbedder:
 
         # encode() returns a numpy ndarray of shape (n, dim).
         # batch_size=64 balances throughput vs. memory on typical hardware.
+        logger.debug(f"HuggingFace embedding batch of {len(texts)} texts...")
         embeddings: np.ndarray = self._model.encode(
             texts,
             batch_size=64,
             show_progress_bar=False,
             convert_to_numpy=True,
         )
+        logger.debug("HuggingFace batch embedding complete.")
         return embeddings.tolist()
 
     def embed_query(self, text: str) -> list[float]:
@@ -138,6 +145,7 @@ class OpenAIEmbedder:
         self._model = model_name
         # text-embedding-3-small outputs 1536 dimensions by default.
         self._dimension: int = 1536
+        logger.info(f"Initialised OpenAI embedder with model: {self._model}")
 
     # ── Public interface ─────────────────────────────────────────────────
 
@@ -169,15 +177,21 @@ class OpenAIEmbedder:
         all_embeddings: list[list[float]] = []
         batch_limit = 2048  # OpenAI's per-request input limit
 
-        for start in range(0, len(texts), batch_limit):
-            batch = texts[start : start + batch_limit]
-            response = self._client.embeddings.create(
-                model=self._model,
-                input=batch,
-            )
-            # Response data is ordered by index, but we sort to be safe.
-            sorted_data = sorted(response.data, key=lambda x: x.index)
-            all_embeddings.extend([item.embedding for item in sorted_data])
+        logger.debug(f"OpenAI embedding batch of {len(texts)} texts...")
+        try:
+            for start in range(0, len(texts), batch_limit):
+                batch = texts[start : start + batch_limit]
+                response = self._client.embeddings.create(
+                    model=self._model,
+                    input=batch,
+                )
+                # Response data is ordered by index, but we sort to be safe.
+                sorted_data = sorted(response.data, key=lambda x: x.index)
+                all_embeddings.extend([item.embedding for item in sorted_data])
+            logger.debug("OpenAI batch embedding complete.")
+        except Exception as exc:
+            logger.error(f"OpenAI embedding API failed: {exc}", exc_info=True)
+            raise
 
         return all_embeddings
 

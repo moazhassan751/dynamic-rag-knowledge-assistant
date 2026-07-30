@@ -53,8 +53,9 @@ from pathlib import Path
 from typing import Any, Generator
 
 from config import Settings
+from src.logger import setup_logger
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 # ── Database Schema ──────────────────────────────────────────────────────────
 
@@ -271,7 +272,9 @@ def score_faithfulness(
             )
 
         judge_output = response.choices[0].message.content.strip()
-        return _parse_faithfulness_response(judge_output)
+        parsed = _parse_faithfulness_response(judge_output)
+        logger.info(f"Faithfulness score: {parsed['score']}/5.0")
+        return parsed
 
     except Exception as exc:
         logger.error("Faithfulness scoring failed: %s", exc)
@@ -407,8 +410,9 @@ def log_evaluation(
             ),
         )
         conn.commit()
+        logger.info(f"Saved evaluation record to {db_path}")
     except sqlite3.Error as exc:
-        logger.error("Failed to log evaluation: %s", exc)
+        logger.error("Failed to log evaluation: %s", exc, exc_info=True)
     finally:
         conn.close()
 

@@ -38,8 +38,8 @@ from src.retriever import retrieve
 from src.vector_store import PineconeVectorStore
 
 # ── Logging ──────────────────────────────────────────────────────────────────
-logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(name)s | %(message)s")
-logger = logging.getLogger(__name__)
+from src.logger import setup_logger
+logger = setup_logger(__name__)
 
 
 # ── Page Config ──────────────────────────────────────────────────────────────
@@ -221,6 +221,7 @@ def _render_chat_tab(
                     st.session_state.last_eval_metrics = metrics
 
                 except Exception as exc:
+                    logger.error(f"Pipeline error for query '{query}': {exc}", exc_info=True)
                     error_msg = f"❌ Error: {exc}"
                     st.error(error_msg)
                     st.session_state.chat_history.append({
@@ -242,6 +243,7 @@ def _run_rag_pipeline(
     Returns a metrics dict containing the answer, scores, and timings.
     """
     tracker = LatencyTracker()
+    logger.info(f"Starting RAG pipeline for query: '{query}'")
 
     # Step 1: Retrieve (embed + search + rerank).
     with tracker.track("embed"):
@@ -293,6 +295,7 @@ def _run_rag_pipeline(
     # Persist to SQLite.
     log_evaluation(metrics, db_path=settings.eval_db_path)
 
+    logger.info(f"RAG pipeline completed in {timings.get('total_ms', 0):.0f}ms")
     return metrics
 
 
@@ -322,6 +325,7 @@ def _render_documents_tab(
 
         if uploaded_files and st.button("📥 Process & Index", type="primary"):
             for uploaded_file in uploaded_files:
+                logger.info(f"Processing uploaded document: {uploaded_file.name}")
                 with st.status(f"Processing {uploaded_file.name}...", expanded=True) as status:
                     try:
                         # Step 1: Load.
@@ -355,9 +359,11 @@ def _render_documents_tab(
                         )
 
                     except DocumentLoadError as exc:
+                        logger.error(f"Failed to load document {uploaded_file.name}: {exc}")
                         status.update(label=f"❌ {uploaded_file.name}", state="error")
                         st.error(str(exc))
                     except Exception as exc:
+                        logger.error(f"Unexpected error processing {uploaded_file.name}: {exc}", exc_info=True)
                         status.update(label=f"❌ {uploaded_file.name}", state="error")
                         st.error(f"Unexpected error: {exc}")
 
@@ -526,12 +532,14 @@ def _render_evaluation_tab(settings: Settings) -> None:
 
 def main() -> None:
     """Application entry point — initialise resources and render tabs."""
+    logger.info("Starting Streamlit application...")
     _init_session_state()
 
     # Load shared resources (cached — only runs once).
     try:
         settings = init_settings()
     except ValueError as exc:
+        logger.error(f"Configuration error during startup: {exc}")
         st.error(f"⚠️ Configuration Error: {exc}")
         st.info("Please check your `.env` file and ensure all required API keys are set.")
         st.stop()

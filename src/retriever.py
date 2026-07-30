@@ -39,6 +39,10 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
+from src.logger import setup_logger
+
+logger = setup_logger(__name__)
+
 if TYPE_CHECKING:
     from src.embeddings import EmbeddingProvider
     from src.vector_store import PineconeVectorStore
@@ -104,6 +108,7 @@ def retrieve(
             }
     """
     # Step 1: Embed the query.
+    logger.info(f"Retrieving context for query: '{query}' (top_k={top_k})")
     query_vector: list[float] = embedder.embed_query(query)
 
     # Step 2: Vector search.
@@ -113,10 +118,13 @@ def retrieve(
     )
 
     if not raw_results:
+        logger.info("Vector search returned no results.")
         return []
 
     # Step 3: Re-rank.
-    return rerank(query, raw_results)
+    reranked = rerank(query, raw_results)
+    logger.info(f"Retrieved and re-ranked {len(reranked)} results.")
+    return reranked
 
 
 def rerank(query: str, results: list[dict]) -> list[dict]:
@@ -159,6 +167,7 @@ def rerank(query: str, results: list[dict]) -> list[dict]:
     query_tokens = _tokenize(query)
 
     scored: list[dict] = []
+    logger.debug(f"Re-ranking {len(results)} results against query tokens: {query_tokens}")
     for result in results:
         chunk_tokens = _tokenize(result.get("text", ""))
         kw_score = _jaccard_similarity(query_tokens, chunk_tokens)

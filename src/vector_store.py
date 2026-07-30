@@ -33,15 +33,15 @@ PineconeVectorStore(settings)
 
 from __future__ import annotations
 
-import logging
 import time
 from typing import Any
 
 from pinecone import Pinecone, ServerlessSpec
 
 from config import Settings
+from src.logger import setup_logger
 
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 # ── Constants ────────────────────────────────────────────────────────────────
 _UPSERT_BATCH_SIZE = 100  # Pinecone recommends ≤100 vectors per upsert call

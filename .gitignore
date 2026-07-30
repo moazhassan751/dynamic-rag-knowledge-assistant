@@ -35,6 +35,7 @@ env/
 eval_logs.db
 *.db-journal
 uploaded_docs/
+logs/
 
 # ─────────────────────────────────
 # Streamlit
