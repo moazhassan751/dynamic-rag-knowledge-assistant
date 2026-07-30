@@ -38,9 +38,9 @@ uploaded_docs/
 logs/
 
 # ─────────────────────────────────
-# Streamlit
+# Streamlit (keep config.toml tracked for theme)
 # ─────────────────────────────────
-.streamlit/
+.streamlit/secrets.toml
 
 # ─────────────────────────────────
 # OS

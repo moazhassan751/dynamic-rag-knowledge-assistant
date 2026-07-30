@@ -1,7 +1,7 @@
 import logging
 import os
 from logging.handlers import RotatingFileHandler
-from config import settings
+
 
 def setup_logger(name: str) -> logging.Logger:
     """
@@ -13,7 +13,8 @@ def setup_logger(name: str) -> logging.Logger:
     if logger.hasHandlers():
         return logger
 
-    logger.setLevel(settings.LOG_LEVEL)
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    logger.setLevel(log_level)
 
     formatter = logging.Formatter(
         fmt="%(asctime)s | %(name)-20s | %(levelname)-8s | %(message)s",
