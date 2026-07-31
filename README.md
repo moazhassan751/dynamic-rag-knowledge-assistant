@@ -152,4 +152,4 @@ A secondary LLM call acts as an impartial "judge", scoring whether the generated
 ---
 
 ## 📄 License
-This project was built as a university internship deliverable. Feel free to use and adapt the architecture for your own RAG solutions!
+This project was built as a  internship deliverable. Feel free to use and adapt the architecture for your own RAG solutions!
